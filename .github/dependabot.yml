@@ -1,0 +1,72 @@
+# .github/dependabot.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Dependabot keeps HACK.Pay dependencies up-to-date automatically.
+# Opens PRs on schedule — CodeRabbit reviews them, CI must pass before merge.
+# ─────────────────────────────────────────────────────────────────────────────
+version: 2
+
+updates:
+  # ── Python (pip / uv / pyproject.toml) ──────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    # Group all non-security patch/minor updates into a single PR per week
+    groups:
+      python-non-security:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      python-security:
+        applies-to: security-updates
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    # Ignore major version bumps on core deps until manually reviewed
+    ignore:
+      - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "fastapi"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "httpx"
+        update-types: ["version-update:semver-major"]
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    groups:
+      actions-non-security:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      actions-security:
+        applies-to: security-updates
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"

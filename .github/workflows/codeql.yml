@@ -1,0 +1,85 @@
+# .github/workflows/codeql.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# CodeQL — Static Application Security Testing (SAST)
+#
+# Scans Python source for:
+#   - Injection vulnerabilities (SQL, command, path traversal)
+#   - Insecure deserialization
+#   - Hardcoded credentials / secrets
+#   - Cryptographic weaknesses
+#   - Unsafe use of eval / exec
+#
+# Runs on:
+#   - Every push to main / develop
+#   - Every pull request targeting main / develop
+#   - Weekly scheduled scan (catches newly-published CVEs against existing code)
+# ─────────────────────────────────────────────────────────────────────────────
+name: CodeQL
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "hack_pay/**"
+      - "examples/**"
+      - "pyproject.toml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "hack_pay/**"
+      - "examples/**"
+      - "pyproject.toml"
+  schedule:
+    # 03:17 UTC every Monday — staggered to avoid GitHub runner congestion
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write   # required to upload SARIF results
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python]
+        # Add "javascript" here when examples/js tooling is added
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # CodeQL needs at least 2 commits for diff analysis
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use the security-extended query suite:
+          # covers OWASP Top 10 + crypto weaknesses + hardcoded creds
+          queries: security-extended
+          config: |
+            paths:
+              - hack_pay
+              - examples
+            paths-ignore:
+              - tests
+              - "**/__pycache__"
+              - "**/*.pyc"
+
+      # CodeQL auto-builds Python — no manual build step needed
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+          # Upload SARIF to GitHub Security tab
+          upload: always
