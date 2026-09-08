@@ -1,2 +1,129 @@
-	K���D@�
-i�Z.��7����
+# ─────────────────────────────────────────────
+# HACK.Pay — .gitignore
+# ─────────────────────────────────────────────
+
+# === SECRETS & CREDENTIALS (NEVER commit) ===
+.env
+.env.*
+!.env.example
+!.env.testnet.example
+*.pem
+*.key
+*_private_key*
+*_operator_key*
+secrets/
+.secrets/
+credentials.json
+service_account.json
+
+# === PRIVATE / INTERNAL DOCS ===
+PRIVATE_IMPLEMENTATION_PLAN.md
+PRIVATE_*.md
+design.md
+
+# === KIRO AI IDE (never commit — internal tooling only) ===
+.kiro/
+.agents/
+skills-lock.json
+
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+lib/
+lib64/
+*.whl
+.installed.cfg
+pip-selfcheck.json
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.pyenv/
+.python-version
+
+# uv / pip-tools
+uv.lock
+requirements.txt.lock
+*.lock
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+coverage/
+htmlcov/
+.hypothesis/
+*.lcov
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+pyrightconfig.json
+
+# === NODE / JAVASCRIPT (examples & tooling) ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+.yarn/
+package-lock.json
+.npm/
+
+# === DOCKER ===
+.docker/
+docker-compose.override.yml
+
+# === IDEs & EDITORS ===
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# === TESTNET CREDENTIALS & TEST ARTIFACTS ===
+tests/testnet/.env
+tests/testnet/credentials/
+testnet_results/
+*.testnet.json
+
+# === BUILD ARTIFACTS ===
+.tox/
+.nox/
+.cache/
+*.log
+logs/
+*.tmp
+*.temp
+tmp/
+
+# === DOCS BUILD ===
+docs/_build/
+docs/.doctrees/
+site/
+
+# === MISC ===
+*.backup
+*.bak
+.benchmarks/
+profile_output/
