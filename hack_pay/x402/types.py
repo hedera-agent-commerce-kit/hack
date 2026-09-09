@@ -13,6 +13,7 @@ References
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
@@ -62,12 +63,11 @@ class PaymentRequirements(BaseModel):
     @field_validator("amount")
     @classmethod
     def amount_must_be_positive_integer_string(cls, v: str) -> str:
-        try:
-            val = int(v)
-        except ValueError:
-            raise ValueError(f"amount must be a decimal integer string, got {v!r}")
-        if val <= 0:
-            raise ValueError(f"amount must be positive, got {val}")
+        if not re.fullmatch(r"[1-9][0-9]*", v):
+            raise ValueError(
+                f"amount must be a canonical positive decimal integer string "
+                f"(no leading zeros, spaces, signs, or underscores), got {v!r}"
+            )
         return v
 
     @field_validator("network")
