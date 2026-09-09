@@ -1,2 +1,11 @@
-	K®ÀÄD@Ô
-i«Z.‡•7¦¥Êë
+# CODEOWNERS â€” auto-request review on every PR
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: everything requires owner review
+* @De-real-iManuel
+
+# Payment-critical paths always require owner review
+hack_pay/core/       @De-real-iManuel
+hack_pay/providers/  @De-real-iManuel
+hack_pay/x402/       @De-real-iManuel
+hack_pay/adapters/   @De-real-iManuel
