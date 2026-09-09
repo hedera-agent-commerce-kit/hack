@@ -54,12 +54,33 @@ def decode_payment_signature(header_value: str) -> PaymentPayload:
             f"PAYMENT-SIGNATURE decoded to invalid JSON: {exc}"
         ) from exc
 
-    # Reject v1 payloads with a clear message.
-    version = data.get("x402Version") or data.get("x402_version")
-    if version is not None and int(version) != 2:
-        raise UnsupportedProtocolVersionError(
-            f"x402 version {version} is not supported. Use x402_version=2."
+    # Reject non-object payloads before any field access.
+    if not isinstance(data, dict):
+        raise MalformedPaymentError(
+            f"PAYMENT-SIGNATURE decoded to a non-object JSON value: {type(data).__name__}"
         )
+
+    # Validate both version aliases as exact integers and reject conflicts.
+    _v_camel = data.get("x402Version")
+    _v_snake = data.get("x402_version")
+    _version_keys = {k: v for k, v in [("x402Version", _v_camel), ("x402_version", _v_snake)] if v is not None}
+
+    if _version_keys:
+        for _key, _val in _version_keys.items():
+            if not isinstance(_val, int) or isinstance(_val, bool):
+                raise MalformedPaymentError(
+                    f"{_key} must be an exact integer, got {_val!r}"
+                )
+        _versions = set(_version_keys.values())
+        if len(_versions) > 1:
+            raise MalformedPaymentError(
+                f"Conflicting version aliases: x402Version={_v_camel!r}, x402_version={_v_snake!r}"
+            )
+        _version = next(iter(_versions))
+        if _version != 2:
+            raise UnsupportedProtocolVersionError(
+                f"x402 version {_version} is not supported. Use x402_version=2."
+            )
 
     try:
         return PaymentPayload.model_validate(data)
@@ -83,8 +104,8 @@ def extract_payment_signature_header(headers: dict[str, str]) -> str | None:
     """
     lower = {k.lower(): v for k, v in headers.items()}
 
-    if sig := lower.get("payment-signature"):
-        return sig
+    if "payment-signature" in lower:
+        return lower["payment-signature"]
 
     if lower.get("x-payment"):
         raise UnsupportedProtocolVersionError(
