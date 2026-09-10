@@ -34,6 +34,11 @@ fastapi = [
 # testnet extra: Hiero SDK dependency TBD — package name on PyPI not yet confirmed.
 # Will be added once https://github.com/hedera-agent-commerce-kit/hack/issues is resolved.
 testnet = []
+
+# ── uv dependency groups (PEP 735) ─────────────────────────────────────────
+# Used by: uv sync --group dev / uv sync --group lint
+# These are development-only; not installed by end users.
+[dependency-groups]
 lint = [
     "ruff>=0.4",
 ]
