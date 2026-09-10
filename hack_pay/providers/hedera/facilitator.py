@@ -1,15 +1,15 @@
 """
-hack_pay.providers.hedera.facilitator — HTTP client for the x402 facilitator API.
+hack_pay.providers.hedera.facilitator â€” HTTP client for the x402 facilitator API.
 
 This is the ONLY module in HACK.Pay that makes outbound HTTP calls.
 All calls go through a single shared httpx.AsyncClient that is initialised
 at startup and closed on shutdown (never per-request).
 
 Facilitator endpoints (Blocky402 and x402.org):
-  GET  /supported  — advertised networks and fee-payer accounts
-  POST /verify     — validate a signed payment payload (no on-chain tx)
-  POST /settle     — co-sign, submit, await SUCCESS
-  GET  /health     — liveness check
+  GET  /supported  â€” advertised networks and fee-payer accounts
+  POST /verify     â€” validate a signed payment payload (no on-chain tx)
+  POST /settle     â€” co-sign, submit, await SUCCESS
+  GET  /health     â€” liveness check
 """
 
 from __future__ import annotations
@@ -82,7 +82,7 @@ class FacilitatorClient:
             headers={"Content-Type": "application/json"},
         )
 
-    # ── Public API ──────────────────────────────────────────────────────────
+    # â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async def get_supported(self) -> FacilitatorSupportedResponse:
         """Fetch advertised payment kinds and fee-payer accounts."""
@@ -142,7 +142,7 @@ class FacilitatorClient:
         """Close the underlying HTTP connection pool."""
         await self._http.aclose()
 
-    # ── Internal helpers ────────────────────────────────────────────────────
+    # â”€â”€ Internal helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async def _get_with_retry(self, path: str) -> httpx.Response:
         last_exc: Exception | None = None
@@ -165,7 +165,7 @@ class FacilitatorClient:
                 await asyncio.sleep(self._backoff * (2 ** attempt))
         raise last_exc  # type: ignore[misc]
 
-    async def _post_with_retry(self, path: str, body: dict) -> httpx.Response:
+    async def _post_with_retry(self, path: str, body: dict[str, Any]) -> httpx.Response:
         last_exc: Exception | None = None
         for attempt in range(self._max_retries + 1):
             try:
