@@ -1,5 +1,5 @@
 """
-hack_pay.observability.logging — Structured logging PaymentEventHook.
+hack_pay.observability.logging â€” Structured logging PaymentEventHook.
 
 Emits one JSON-structured log line per payment lifecycle event.
 Uses WARNING for failure events, INFO for everything else.
@@ -29,11 +29,11 @@ class LoggingPaymentEventHook(PaymentEventHook):
         self._logger = logging.getLogger(logger_name)
 
     async def on_event(self, ctx: PaymentEventContext) -> None:
-        record: dict = {
+        record: dict[str, Any] = {
             "event": ctx.event.value,
             "endpoint": ctx.endpoint,
         }
-        # Only include fields that are set — keeps logs clean
+        # Only include fields that are set â€” keeps logs clean
         if ctx.amount_tinybars is not None:
             record["amount_tinybars"] = ctx.amount_tinybars
         if ctx.network is not None:
