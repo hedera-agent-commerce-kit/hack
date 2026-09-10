@@ -116,20 +116,25 @@ Hedera Provider  (FacilitatorClient → HTTP calls to Blocky402)
 Blocky402 / Hedera network
 ```
 
-Hard rule: no layer imports from a layer above it. `hack_pay.core` has zero knowledge of FastAPI. `hack_pay.x402` has zero network I/O. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for details.
+Hard rule: no layer imports from a layer above it. `hack_pay.core` has zero knowledge of FastAPI. `hack_pay.x402` has zero network I/O. See [`ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) for details.
 
 ---
 
 ## Project status
 
-**Pre-release — implementation phase.**
+**v0.1.0 — alpha, implementation complete, CI passing.**
 
-The repository currently contains:
-- Full technical design document (`.kiro/specs/hack-pay/design.md`)
-- CI/CD pipeline (lint, type-check, unit/integration/security tests, testnet integration, release to PyPI)
-- Project scaffold (`pyproject.toml`, `hack_pay/`, `tests/`)
+The library is fully implemented and ready for early adopters. What's shipped:
 
-Implementation of `hack_pay` is the next milestone. See the [open PR](https://github.com/hedera-agent-commerce-kit/hack/pulls) and [CHANGELOG](CHANGELOG.md).
+- **x402 gate** (`hack_pay.core`) — full challenge → verify → settle → grant flow
+- **`@paid` decorator** (`hack_pay.adapters.fastapi`) — one-line FastAPI integration
+- **Hedera provider** (`hack_pay.providers.hedera`) — Blocky402 facilitator client for testnet and mainnet
+- **Idempotency store** (`hack_pay.idempotency`) — in-memory store with TTL and pluggable interface
+- **Receipt publisher abstraction** (`hack_pay.receipts`) — no-op default, pluggable for durable storage
+- **Error hierarchy** (`hack_pay.errors`) — structured exceptions for every failure mode
+- **Test suite** — unit, integration, protocol, security, and concurrency tests; all passing in CI
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list of changes.
 
 ---
 
@@ -137,7 +142,7 @@ Implementation of `hack_pay` is the next milestone. See the [open PR](https://gi
 
 We welcome contributors. The best place to start:
 
-1. Read [`ARCHITECTURE.md`](ARCHITECTURE.md) — understand the layer boundaries before touching code
+1. Read [`ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) — understand the layer boundaries before touching code
 2. Read the design document — open the PR and navigate to `.kiro/specs/hack-pay/design.md`
 3. Check [open issues](https://github.com/hedera-agent-commerce-kit/hack/issues) for `good first issue` labels
 
