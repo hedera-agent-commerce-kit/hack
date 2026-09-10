@@ -21,6 +21,7 @@ HACK.Pay is an open-source Python library that turns any FastAPI endpoint into a
 ```python
 from hack_pay import paid
 
+
 @app.get("/weather")
 @paid("0.5 HBAR")
 async def get_weather(city: str):
