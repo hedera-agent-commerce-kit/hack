@@ -1,8 +1,8 @@
 """
-hack_pay.observability.base — PaymentEventHook interface and event types.
+hack_pay.observability.base â€” PaymentEventHook interface and event types.
 
 Hooks are called by PaymentGate at each lifecycle stage.  A hook must never
-raise — failures are caught and logged internally so a broken hook cannot
+raise â€” failures are caught and logged internally so a broken hook cannot
 affect the payment outcome.
 
 Log safety rule: PaymentEventContext must never include raw payment
@@ -50,10 +50,10 @@ class PaymentEventContext:
     endpoint: str
     amount_tinybars: int | None = None
     network: str | None = None
-    transaction_id: str | None = None  # safe — Hedera tx id, not a secret
+    transaction_id: str | None = None  # safe â€” Hedera tx id, not a secret
     error_type: str | None = None       # error class name only, not message
     duration_ms: float | None = None
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
 
 class PaymentEventHook(ABC):
