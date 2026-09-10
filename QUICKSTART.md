@@ -77,15 +77,18 @@ hack = HackPay(HackPayConfig(provider=provider))
 
 # ── Lifespan: connect on startup, clean up on shutdown ────────────────────
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await hack.startup(app)
     yield
     await hack.shutdown()
 
+
 app = FastAPI(lifespan=lifespan)
 
 # ── Paid route ────────────────────────────────────────────────────────────
+
 
 @app.get("/weather")
 @paid("0.5 HBAR")
@@ -97,7 +100,9 @@ async def get_weather(city: str, request: Request):  # <-- request: Request is r
         "note": "Paid for with 0.5 HBAR via x402.",
     }
 
+
 # ── Free route ─────────────────────────────────────────────────────────────
+
 
 @app.get("/health")
 async def health():
