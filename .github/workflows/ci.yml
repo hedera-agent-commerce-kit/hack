@@ -1,2 +1,160 @@
-	K���D@�
-i�Z.��7��ț�
+# ─────────────────────────────────────────────────────────────────────────────
+# HACK.Pay — CI: Lint, Type-check, Unit & Integration Tests
+# Runs on every push and pull-request targeting main / develop
+# ─────────────────────────────────────────────────────────────────────────────
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ── 1. Lint + Format ────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install lint dependencies
+        run: uv sync --group lint
+
+      - name: Ruff — lint
+        run: uv run ruff check .
+
+      - name: Ruff — format check
+        run: uv run ruff format --check .
+
+  # ── 2. Type-check ───────────────────────────────────────────────────────────
+  typecheck:
+    name: Type Check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: mypy
+        run: uv run mypy hack_pay/ --strict
+
+  # ── 3. Unit Tests ───────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run unit tests
+        run: uv run pytest tests/unit/ -v --tb=short --cov=hack_pay --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          flags: unit-${{ matrix.python-version }}
+          fail_ci_if_error: false
+
+  # ── 4. Integration Tests ────────────────────────────────────────────────────
+  integration-tests:
+    name: Integration Tests (mocked facilitator)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run integration tests
+        run: uv run pytest tests/integration/ tests/protocol/ tests/security/ tests/concurrency/ -v --tb=short
+
+  # ── 5. Security Scan ────────────────────────────────────────────────────────
+  security-scan:
+    name: Security Scan (bandit + pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Bandit — static security analysis
+        run: uv run bandit -r hack_pay/ -ll -ii
+
+      - name: pip-audit — dependency vulnerability scan
+        run: uv run pip-audit --require-hashes || true
+
+  # ── 6. Secret Leak Detection ────────────────────────────────────────────────
+  secret-scan:
+    name: Secret Scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for secret scanning
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,2 +1,87 @@
-	K���D@�
-i�Z.��7�����
+# ─────────────────────────────────────────────────────────────────────────────
+# HACK.Pay — Testnet Integration Tests (opt-in, manual trigger only)
+# NEVER runs automatically. Requires secrets to be explicitly set.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Testnet Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      facilitator:
+        description: "Facilitator to use"
+        required: true
+        default: "blocky402-testnet"
+        type: choice
+        options:
+          - blocky402-testnet
+          - x402-org-testnet
+      log_level:
+        description: "Log level"
+        required: false
+        default: "INFO"
+        type: choice
+        options: [DEBUG, INFO, WARNING]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  testnet:
+    name: Hedera Testnet — Real Network
+    runs-on: ubuntu-latest
+    environment: testnet  # requires manual approval in repo settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Validate secrets are present (no values logged)
+        run: |
+          if [ -z "$HEDERA_TESTNET_ACCOUNT_ID" ]; then
+            echo "ERROR: HEDERA_TESTNET_ACCOUNT_ID is not set"
+            exit 1
+          fi
+          if [ -z "$HEDERA_TESTNET_PRIVATE_KEY" ]; then
+            echo "ERROR: HEDERA_TESTNET_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          if [ -z "$HEDERA_TESTNET_RECEIVER_ACCOUNT_ID" ]; then
+            echo "ERROR: HEDERA_TESTNET_RECEIVER_ACCOUNT_ID is not set"
+            exit 1
+          fi
+          echo "All required secrets are present (values not logged)"
+        env:
+          HEDERA_TESTNET_ACCOUNT_ID: ${{ secrets.HEDERA_TESTNET_ACCOUNT_ID }}
+          HEDERA_TESTNET_PRIVATE_KEY: ${{ secrets.HEDERA_TESTNET_PRIVATE_KEY }}
+          HEDERA_TESTNET_RECEIVER_ACCOUNT_ID: ${{ secrets.HEDERA_TESTNET_RECEIVER_ACCOUNT_ID }}
+
+      - name: Run testnet integration tests
+        env:
+          HACK_PAY_TESTNET_ACCOUNT_ID: ${{ secrets.HEDERA_TESTNET_ACCOUNT_ID }}
+          HACK_PAY_TESTNET_PRIVATE_KEY: ${{ secrets.HEDERA_TESTNET_PRIVATE_KEY }}
+          HACK_PAY_TESTNET_RECEIVER: ${{ secrets.HEDERA_TESTNET_RECEIVER_ACCOUNT_ID }}
+          HACK_PAY_TESTNET_FACILITATOR: ${{ inputs.facilitator }}
+          HACK_PAY_LOG_LEVEL: ${{ inputs.log_level }}
+          # These are NOT secrets — public facilitator URLs
+          BLOCKY402_TESTNET_URL: "https://api.testnet.blocky402.com"
+          X402_ORG_URL: "https://x402.org/facilitator"
+        run: |
+          uv run pytest tests/testnet/ -v --tb=short \
+            -m "testnet" \
+            --log-cli-level=${{ inputs.log_level }}
+
+      - name: Scrub secrets from logs
+        if: always()
+        run: echo "Testnet run complete. Check that no private keys appear in the logs above."
