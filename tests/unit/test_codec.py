@@ -1,4 +1,4 @@
-﻿"""tests/unit/test_codec.py — x402 header codec encode/decode."""
+"""tests/unit/test_codec.py — x402 header codec encode/decode."""
 
 import base64
 import json
