@@ -1,4 +1,4 @@
-"""
+﻿"""
 hack_pay.providers.hedera.provider — HederaPaymentProvider implementation.
 
 Delegates all on-chain work to a public x402 facilitator (Blocky402 by
@@ -111,16 +111,16 @@ class HederaPaymentProvider(PaymentProvider):
         from hack_pay.core.types import PaymentConfig  # noqa: E402
 
         cfg: PaymentConfig = config  # type: ignore[assignment]
-        return PaymentRequirements(
-            scheme="exact",
-            network=self._config.network,
-            pay_to=self._config.receiver_account_id,
-            amount=str(cfg.amount_tinybars),  # tinybars as decimal string
-            asset=cfg.asset,
-            description=cfg.description,
-            max_deadline_seconds=cfg.max_deadline_seconds,
-            extra={"feePayer": self._fee_payer},
-        )
+        return PaymentRequirements.model_validate({
+            "scheme": "exact",
+            "network": self._config.network,
+            "payTo": self._config.receiver_account_id,
+            "amount": str(cfg.amount_tinybars),
+            "asset": cfg.asset,
+            "description": cfg.description,
+            "maxTimeoutSeconds": cfg.max_deadline_seconds,
+            "extra": {"feePayer": self._fee_payer},
+        })
 
     async def verify(
         self,
@@ -139,6 +139,9 @@ class HederaPaymentProvider(PaymentProvider):
     ) -> SettleResult:
         resp = await self._client.settle(payload, requirements)
         if not resp.success:
+            if resp.error_reason == "settlement_pending" and resp.transaction:
+                net = resp.network or ""
+                return SettleResult.failure(f"settlement_pending:{resp.transaction}:{net}")
             return SettleResult.failure(resp.error or "Settlement failed")
         if resp.transaction is None:
             return SettleResult.failure("Facilitator returned no transaction ID")

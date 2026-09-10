@@ -19,12 +19,10 @@ from __future__ import annotations
 
 import logging
 import os
+from urllib.parse import urlparse
 
 from hack_pay.errors import ConfigurationError
-from hack_pay.providers.hedera.config import (
-    BLOCKY402_TESTNET,
-    HederaProviderConfig,
-)
+from hack_pay.providers.hedera.config import HederaProviderConfig
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,14 @@ def load_hedera_config_from_env() -> HederaProviderConfig:
         )
 
     network = os.environ.get("HACK_PAY_HEDERA_NETWORK", "hedera:testnet").strip()
-    facilitator_url = os.environ.get("HACK_PAY_FACILITATOR_URL", BLOCKY402_TESTNET).strip()
+    env_facilitator = os.environ.get("HACK_PAY_FACILITATOR_URL", "").strip()
+
+    # Sanitize URL for logging - emit only origin, never full URL (CWE-532)
+    if env_facilitator:
+        parsed = urlparse(env_facilitator)
+        facilitator_display = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else "custom"
+    else:
+        facilitator_display = "default"
 
     # Log which vars are configured — never log values of secrets
     logger.info(
@@ -55,12 +60,11 @@ def load_hedera_config_from_env() -> HederaProviderConfig:
         extra={
             "HACK_PAY_RECEIVER_ACCOUNT_ID": "set",
             "HACK_PAY_HEDERA_NETWORK": network,
-            "HACK_PAY_FACILITATOR_URL": facilitator_url,
+            "HACK_PAY_FACILITATOR_URL": facilitator_display,
         },
     )
 
-    return HederaProviderConfig(
-        network=network,
-        receiver_account_id=account_id,
-        facilitator_url=facilitator_url,
-    )
+    kwargs: dict[str, str] = {"network": network, "receiver_account_id": account_id}
+    if env_facilitator:
+        kwargs["facilitator_url"] = env_facilitator
+    return HederaProviderConfig(**kwargs)  # type: ignore[arg-type]

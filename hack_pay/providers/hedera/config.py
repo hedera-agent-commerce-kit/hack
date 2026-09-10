@@ -76,12 +76,17 @@ class HederaProviderConfig:
 
     network: str
     receiver_account_id: str
-    facilitator_url: str = BLOCKY402_TESTNET
+    facilitator_url: str = ""  # resolved in __post_init__ based on network
     facilitator_timeout_seconds: int = 10
     max_retries: int = 2
     retry_backoff_seconds: float = 0.5
 
     def __post_init__(self) -> None:
+        if not self.facilitator_url:
+            default_url = (
+                BLOCKY402_MAINNET if self.network == "hedera:mainnet" else BLOCKY402_TESTNET
+            )
+            object.__setattr__(self, "facilitator_url", default_url)
         object.__setattr__(
             self,
             "receiver_account_id",

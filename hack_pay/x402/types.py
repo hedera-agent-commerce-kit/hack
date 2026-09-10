@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PaymentRequirements(BaseModel):
@@ -40,7 +40,7 @@ class PaymentRequirements(BaseModel):
 
     scheme: str = Field(..., description="Payment scheme, e.g. 'exact'")
     network: str = Field(..., description="CAIP-2 network identifier")
-    pay_to: str = Field(..., description="Hedera account ID of the receiver")
+    pay_to: str = Field(..., alias="payTo", description="Hedera account ID of the receiver")
     amount: str = Field(..., description="Amount in tinybars as a decimal string")
     asset: str = Field(
         default="0.0.0",
@@ -51,6 +51,7 @@ class PaymentRequirements(BaseModel):
     max_deadline_seconds: int = Field(
         default=300,
         ge=1,
+        alias="maxTimeoutSeconds",
         description="Seconds after challenge issuance within which payment is accepted",
     )
     extra: dict[str, Any] = Field(
@@ -58,7 +59,7 @@ class PaymentRequirements(BaseModel):
         description="Scheme-specific extras; Hedera uses {'feePayer': '0.0.XXXXX'}",
     )
 
-    model_config = {"frozen": True}
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     @field_validator("amount")
     @classmethod
@@ -98,7 +99,7 @@ class PaymentPayload(BaseModel):
         description="Base64-encoded partially-signed Hedera TransferTransaction bytes",
     )
 
-    model_config = {"frozen": True}
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     @field_validator("x402_version")
     @classmethod
@@ -124,5 +125,10 @@ class SettlementResponse(BaseModel):
     network: str | None = Field(default=None, description="CAIP-2 network the tx was settled on")
     payer: str | None = Field(default=None, description="Payer account ID extracted from tx")
     error: str | None = Field(default=None, description="Error message if success=False")
+    error_reason: str | None = Field(
+        default=None,
+        alias="errorReason",
+        description="Machine-readable error reason, e.g. settlement_pending",
+    )
 
-    model_config = {"frozen": True}
+    model_config = ConfigDict(frozen=True, populate_by_name=True)

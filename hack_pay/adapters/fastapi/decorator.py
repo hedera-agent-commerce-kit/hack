@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import functools
+import inspect
 from collections.abc import Callable
 from typing import Any
 
@@ -56,8 +58,12 @@ def paid(amount: str | PaymentConfig) -> Callable[..., Any]:
                 )
             if result.kind == "error":
                 return error_to_response(result.error)
-            # Granted - call handler then inject PAYMENT-RESPONSE header
-            raw = await func(*args, **kwargs)
+            # Granted - call handler (sync or async) then inject PAYMENT-RESPONSE header
+            if inspect.iscoroutinefunction(func):
+                raw = await func(*args, **kwargs)
+            else:
+                loop = asyncio.get_event_loop()
+                raw = await loop.run_in_executor(None, lambda: func(*args, **kwargs))
             settlement = SettlementResponse(
                 success=True,
                 transaction=result.receipt.transaction_id,

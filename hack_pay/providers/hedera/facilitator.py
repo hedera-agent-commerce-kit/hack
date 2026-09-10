@@ -35,13 +35,17 @@ logger = logging.getLogger(__name__)
 
 
 def _raise_for_facilitator(response: httpx.Response) -> None:
-    """Map non-2xx facilitator responses to typed errors."""
+    """Map non-2xx responses. 4xx: non-retryable; 5xx: transient (retried)."""
     if response.status_code < 400:
         return
     try:
         detail = response.json().get("error") or response.text[:200]
     except Exception:
         detail = response.text[:200]
+    if response.status_code >= 500:
+        raise FacilitatorUnavailableError(
+            f"Facilitator returned HTTP {response.status_code} (transient): {detail}"
+        )
     raise FacilitatorInvalidResponseError(
         f"Facilitator returned HTTP {response.status_code}: {detail}"
     )
@@ -102,8 +106,8 @@ class FacilitatorClient:
     ) -> FacilitatorVerifyResponse:
         """Validate the signed payment proof. Does NOT submit to Hedera."""
         body = {
-            "payload": payload.model_dump(),
-            "requirements": requirements.model_dump(),
+            "payload": payload.model_dump(by_alias=True),
+            "requirements": requirements.model_dump(by_alias=True),
         }
         resp = await self._post_with_retry("/verify", body)
         try:
@@ -118,8 +122,8 @@ class FacilitatorClient:
     ) -> SettlementResponse:
         """Co-sign, submit, and await SUCCESS on the Hedera network."""
         body = {
-            "payload": payload.model_dump(),
-            "requirements": requirements.model_dump(),
+            "payload": payload.model_dump(by_alias=True),
+            "requirements": requirements.model_dump(by_alias=True),
         }
         resp = await self._post_with_retry("/settle", body)
         try:
@@ -150,12 +154,12 @@ class FacilitatorClient:
                 return resp
             except httpx.TimeoutException as exc:
                 last_exc = FacilitatorTimeoutError(f"Facilitator GET {path} timed out: {exc}")
-            except httpx.ConnectError as exc:
+            except (httpx.ConnectError, FacilitatorUnavailableError) as exc:
                 last_exc = FacilitatorUnavailableError(
-                    f"Cannot connect to facilitator at {self._base_url}: {exc}"
+                    f"Cannot reach facilitator at {self._base_url}: {exc}"
                 )
             except FacilitatorInvalidResponseError:
-                raise  # non-retryable
+                raise  # 4xx non-retryable
             if attempt < self._max_retries:
                 await asyncio.sleep(self._backoff * (2**attempt))
         raise last_exc  # type: ignore[misc]
@@ -169,12 +173,12 @@ class FacilitatorClient:
                 return resp
             except httpx.TimeoutException as exc:
                 last_exc = FacilitatorTimeoutError(f"Facilitator POST {path} timed out: {exc}")
-            except httpx.ConnectError as exc:
+            except (httpx.ConnectError, FacilitatorUnavailableError) as exc:
                 last_exc = FacilitatorUnavailableError(
-                    f"Cannot connect to facilitator at {self._base_url}: {exc}"
+                    f"Cannot reach facilitator at {self._base_url}: {exc}"
                 )
             except FacilitatorInvalidResponseError:
-                raise  # non-retryable
+                raise  # 4xx non-retryable
             if attempt < self._max_retries:
                 await asyncio.sleep(self._backoff * (2**attempt))
         raise last_exc  # type: ignore[misc]

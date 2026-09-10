@@ -63,3 +63,12 @@ class TestHederaProviderConfig:
     def test_default_facilitator_is_blocky402_testnet(self):
         cfg = HederaProviderConfig(network="hedera:testnet", receiver_account_id="0.0.12345")
         assert "blocky402" in cfg.facilitator_url
+
+    def test_mainnet_default_facilitator_is_blocky402_mainnet(self):
+        cfg = HederaProviderConfig(network="hedera:mainnet", receiver_account_id="0.0.99999")
+        assert "blocky402.com" in cfg.facilitator_url
+        assert "testnet" not in cfg.facilitator_url
+
+    def test_testnet_default_facilitator_is_blocky402_testnet(self):
+        cfg = HederaProviderConfig(network="hedera:testnet", receiver_account_id="0.0.12345")
+        assert "testnet.blocky402.com" in cfg.facilitator_url

@@ -19,4 +19,4 @@ class NoopReceiptPublisher(ReceiptPublisher):
         pass  # intentional no-op
 
     async def is_available(self) -> bool:
-        return True
+        return False  # not a durable store
