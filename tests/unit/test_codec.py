@@ -1,4 +1,4 @@
-"""tests/unit/test_codec.py — x402 header codec encode/decode."""
+﻿"""tests/unit/test_codec.py — x402 header codec encode/decode."""
 
 import base64
 import json
@@ -45,7 +45,7 @@ class TestEncodePaymentRequired:
         decoded = json.loads(base64.b64decode(encoded))
         assert decoded["scheme"] == "exact"
         assert decoded["network"] == "hedera:testnet"
-        assert decoded["pay_to"] == "0.0.12345"
+        assert decoded["payTo"] == "0.0.12345"
         assert decoded["amount"] == "50000000"
 
     def test_is_ascii_safe(self, requirements):
