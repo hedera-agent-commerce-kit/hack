@@ -1,5 +1,5 @@
 """
-hack_pay.core.gate — PaymentGate: the central payment orchestrator.
+hack_pay.core.gate â€” PaymentGate: the central payment orchestrator.
 
 PaymentGate is the only component that coordinates all other components.
 It has no HTTP knowledge (no fastapi/starlette imports) and no blockchain
@@ -7,7 +7,7 @@ knowledge (no hedera SDK imports).
 
 Flow
 ----
-1. No PAYMENT-SIGNATURE header  →  build requirements  →  ChallengeResult
+1. No PAYMENT-SIGNATURE header  â†’  build requirements  â†’  ChallengeResult
 2. PAYMENT-SIGNATURE present:
    a. Check idempotency store (fast path for replays)
    b. Validate payload structure against requirements
@@ -15,7 +15,7 @@ Flow
    d. Re-check idempotency (double-check after lock acquisition)
    e. Verify with provider
    f. Settle with provider
-   g. Store in idempotency store (put_if_absent — atomic)
+   g. Store in idempotency store (put_if_absent â€” atomic)
    h. Publish receipt (non-blocking unless require_durable=True)
    i. Emit lifecycle events
    j. Return GrantedResult
@@ -96,7 +96,7 @@ class PaymentGate:
         self._inflight: dict[str, asyncio.Lock] = {}
         self._inflight_meta_lock = asyncio.Lock()
 
-    # ── Primary entry point ───────────────────────────────────────────────
+    # â”€â”€ Primary entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async def gate(
         self,
@@ -106,7 +106,7 @@ class PaymentGate:
         """
         Evaluate whether the request should be granted or challenged.
 
-        Never raises — all errors are wrapped in ErrorResult so the adapter
+        Never raises â€” all errors are wrapped in ErrorResult so the adapter
         can map them to the correct HTTP status without bare exception handling.
         """
         try:
@@ -122,20 +122,20 @@ class PaymentGate:
                 )
             )
 
-    # ── Internal implementation ───────────────────────────────────────────
+    # â”€â”€ Internal implementation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async def _gate(
         self,
         context: RequestContext,
         config: PaymentConfig,
     ) -> GateResult:
-        # ── Phase 1: No payment proof → issue challenge ───────────────────
+        # â”€â”€ Phase 1: No payment proof â†’ issue challenge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if not context.payment_signature:
             requirements = await self._provider.build_payment_requirements(config)
             await self._emit(PaymentEvent.CHALLENGE_ISSUED, context, config)
             return ChallengeResult(requirements=requirements)
 
-        # ── Phase 2: Parse and validate the payment signature ─────────────
+        # â”€â”€ Phase 2: Parse and validate the payment signature â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         payload = decode_payment_signature(context.payment_signature)
         requirements = await self._provider.build_payment_requirements(config)
         validate_payload_matches_requirements(payload, requirements)
@@ -147,7 +147,7 @@ class PaymentGate:
             await self._emit(PaymentEvent.IDEMPOTENCY_HIT, context, config)
             return GrantedResult(receipt=cached)
 
-        # ── Phase 3: Verify + settle under per-key lock ───────────────────
+        # â”€â”€ Phase 3: Verify + settle under per-key lock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         async with self._inflight_lock(key):
             # Re-check after acquiring lock (concurrent duplicate may have settled)
             if cached := await self._idempotency.get(key):
@@ -196,7 +196,7 @@ class PaymentGate:
                 asset=requirements.asset,
                 network=requirements.network,
                 settled_at=datetime.now(tz=timezone.utc),
-                facilitator_url=self._provider._config.facilitator_url  # type: ignore[attr-defined]
+                facilitator_url=getattr(getattr(self._provider, '_config', None), 'facilitator_url', '')
                 if hasattr(self._provider, "_config") else "",
             )
 
@@ -211,7 +211,7 @@ class PaymentGate:
                 duration_ms=settle_ms,
             )
 
-        # ── Phase 4: Non-blocking receipt publication ─────────────────────
+        # â”€â”€ Phase 4: Non-blocking receipt publication â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if config.require_durable_receipt:
             if not await self._receipt_publisher.is_available():
                 raise DurableReceiptUnavailableError()
@@ -222,7 +222,7 @@ class PaymentGate:
 
         return GrantedResult(receipt=receipt)
 
-    # ── Helpers ───────────────────────────────────────────────────────────
+    # â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @asynccontextmanager
     async def _inflight_lock(self, key: str) -> AsyncIterator[None]:
