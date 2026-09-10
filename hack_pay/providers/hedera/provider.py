@@ -1,4 +1,4 @@
-﻿"""
+"""
 hack_pay.providers.hedera.provider — HederaPaymentProvider implementation.
 
 Delegates all on-chain work to a public x402 facilitator (Blocky402 by
@@ -111,16 +111,18 @@ class HederaPaymentProvider(PaymentProvider):
         from hack_pay.core.types import PaymentConfig  # noqa: E402
 
         cfg: PaymentConfig = config  # type: ignore[assignment]
-        return PaymentRequirements.model_validate({
-            "scheme": "exact",
-            "network": self._config.network,
-            "payTo": self._config.receiver_account_id,
-            "amount": str(cfg.amount_tinybars),
-            "asset": cfg.asset,
-            "description": cfg.description,
-            "maxTimeoutSeconds": cfg.max_deadline_seconds,
-            "extra": {"feePayer": self._fee_payer},
-        })
+        return PaymentRequirements.model_validate(
+            {
+                "scheme": "exact",
+                "network": self._config.network,
+                "payTo": self._config.receiver_account_id,
+                "amount": str(cfg.amount_tinybars),
+                "asset": cfg.asset,
+                "description": cfg.description,
+                "maxTimeoutSeconds": cfg.max_deadline_seconds,
+                "extra": {"feePayer": self._fee_payer},
+            }
+        )
 
     async def verify(
         self,
