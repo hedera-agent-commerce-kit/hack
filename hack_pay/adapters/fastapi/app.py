@@ -1,5 +1,5 @@
 """
-hack_pay.adapters.fastapi.app — HackPay application wrapper.
+hack_pay.adapters.fastapi.app â€” HackPay application wrapper.
 
 HackPay wires together the provider, gate, idempotency store, receipt
 publisher, and event hooks, then registers them with the FastAPI app via
@@ -116,7 +116,7 @@ class HackPay:
 
         # Attach gate to FastAPI app state so decorators can access it
         if hasattr(app, "state"):
-            app.state.hack_pay_gate = self._gate  # type: ignore[union-attr]
+            app.state.hack_pay_gate = self._gate  # noqa: attr set dynamically
 
         logger.info("HACK.Pay started successfully")
 
