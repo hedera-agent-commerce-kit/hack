@@ -31,6 +31,9 @@ fastapi = [
     "fastapi>=0.111",
     "starlette>=0.37",
 ]
+redis = [
+    "redis>=5.0",
+]
 # testnet extra: Hiero SDK dependency TBD — package name on PyPI not yet confirmed.
 # Will be added once https://github.com/hedera-agent-commerce-kit/hack/issues is resolved.
 testnet = []

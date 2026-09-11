@@ -16,6 +16,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - PR template with x402/Hedera protocol compliance checklist
 - `.env.example` documenting all configuration variables
 - `pyproject.toml` with dependency declarations and tool configuration
+- `RedisIdempotencyStore` in `hack_pay/idempotency/redis.py` — production-ready
+  cross-process idempotency store backed by Redis (`hack-pay[redis]` optional extra)
 
 ## [0.1.0] — TBD
 
