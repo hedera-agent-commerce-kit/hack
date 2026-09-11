@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 from hack_pay.idempotency.base import IdempotencyStore
@@ -53,7 +53,7 @@ def _serialize(receipt: PaymentReceipt) -> str:
 
 def _deserialize(raw: str) -> PaymentReceipt:
     d = json.loads(raw)
-    d["settled_at"] = datetime.fromisoformat(d["settled_at"]).replace(tzinfo=timezone.utc)
+    d["settled_at"] = datetime.fromisoformat(d["settled_at"])
     return PaymentReceipt(**d)
 
 
@@ -70,7 +70,7 @@ class RedisIdempotencyStore(IdempotencyStore):
         The caller is responsible for its lifecycle (connect / close).
     """
 
-    def __init__(self, client: Redis) -> None:  # type: ignore[type-arg]
+    def __init__(self, client: Redis) -> None:
         self._redis = client
 
     async def get(self, key: str) -> PaymentReceipt | None:
@@ -85,6 +85,8 @@ class RedisIdempotencyStore(IdempotencyStore):
         receipt: PaymentReceipt,
         ttl_seconds: int = 3600,
     ) -> None:
+        if ttl_seconds <= 0:
+            raise ValueError(f"ttl_seconds must be positive, got {ttl_seconds}")
         await self._redis.set(_full_key(key), _serialize(receipt), ex=ttl_seconds)
 
     async def put_if_absent(
@@ -99,14 +101,24 @@ class RedisIdempotencyStore(IdempotencyStore):
         Returns the receipt now stored — either the one just inserted,
         or the pre-existing one if another process won the race.
         """
+        if ttl_seconds <= 0:
+            raise ValueError(f"ttl_seconds must be positive, got {ttl_seconds}")
         full_key = _full_key(key)
         ttl_ms = ttl_seconds * 1000
-        stored = await self._redis.set(full_key, _serialize(receipt), nx=True, px=ttl_ms)
+        serialized = _serialize(receipt)
+        stored = await self._redis.set(full_key, serialized, nx=True, px=ttl_ms)
         if stored:
             return receipt
         # Another process won — fetch and return what is stored.
         raw = await self._redis.get(full_key)
-        if raw is None:
-            # Key expired between SET and GET (extremely unlikely but safe to handle).
+        if raw is not None:
+            return _deserialize(raw if isinstance(raw, str) else raw.decode())
+        # Key expired between our failed SET NX and GET — retry once.
+        stored = await self._redis.set(full_key, serialized, nx=True, px=ttl_ms)
+        if stored:
             return receipt
-        return _deserialize(raw if isinstance(raw, str) else raw.decode())
+        raw = await self._redis.get(full_key)
+        if raw is not None:
+            return _deserialize(raw if isinstance(raw, str) else raw.decode())
+        # Extremely unlikely: expired again after second attempt — return our receipt.
+        return receipt

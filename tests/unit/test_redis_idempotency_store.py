@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from hack_pay.idempotency.redis import RedisIdempotencyStore, _KEY_PREFIX, _serialize
+from hack_pay.idempotency.redis import _KEY_PREFIX, RedisIdempotencyStore, _serialize
 from hack_pay.receipts.types import PaymentReceipt
 
 
@@ -71,13 +71,36 @@ class TestRedisIdempotencyStore:
         result = await store.put_if_absent("key", second, ttl_seconds=3600)
         assert result == first  # pre-existing receipt returned
 
-    async def test_put_if_absent_falls_back_when_key_expires_between_set_and_get(self):
+    async def test_put_rejects_zero_ttl(self):
         store, client = make_store()
-        receipt = make_receipt("tx-new")
-        client.set.return_value = None  # NX failed
-        client.get.return_value = None  # but key already expired
+        with pytest.raises(ValueError, match="ttl_seconds must be positive"):
+            await store.put("key", make_receipt(), ttl_seconds=0)
+
+    async def test_put_if_absent_rejects_negative_ttl(self):
+        store, client = make_store()
+        with pytest.raises(ValueError, match="ttl_seconds must be positive"):
+            await store.put_if_absent("key", make_receipt(), ttl_seconds=-1)
+
+    async def test_put_if_absent_retries_set_when_get_returns_none(self):
+        """SET NX fails, GET returns None (key expired), retry SET NX succeeds."""
+        store, client = make_store()
+        receipt = make_receipt("tx-retry")
+        # First SET NX fails, retry SET NX succeeds
+        client.set = AsyncMock(side_effect=[None, True])
+        client.get.return_value = None
         result = await store.put_if_absent("key", receipt)
-        assert result == receipt  # safe fallback: return the receipt we tried to store
+        assert result == receipt
+        assert client.set.call_count == 2
+
+    async def test_put_if_absent_retry_returns_winner_when_second_set_also_fails(self):
+        """Both SET NX attempts fail — another process won; return their receipt."""
+        store, client = make_store()
+        winner = make_receipt("tx-winner")
+        our = make_receipt("tx-ours")
+        client.set = AsyncMock(return_value=None)  # both NX attempts fail
+        client.get = AsyncMock(side_effect=[None, _serialize(winner).encode()])
+        result = await store.put_if_absent("key", our)
+        assert result == winner
 
     async def test_key_prefix_is_applied(self):
         store, client = make_store()
