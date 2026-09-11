@@ -150,4 +150,5 @@ class HederaPaymentProvider(PaymentProvider):
         return SettleResult.success(
             transaction_id=resp.transaction,
             payer=resp.payer,
+            receiver=resp.pay_to,
         )

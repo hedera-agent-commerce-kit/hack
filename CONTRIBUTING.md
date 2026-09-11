@@ -205,6 +205,7 @@ The codebase enforces a strict dependency hierarchy. Violations are caught by `l
 
 ```
 hack_pay.core  →  hack_pay.x402  →  hack_pay.adapters
+foundation modules  ← imported by —  core/providers  ← imported by —  adapters
 ```
 
 Specifically:

@@ -27,7 +27,7 @@ pip install "hack-pay[fastapi]" uvicorn python-dotenv
 Create a file named `.env` in your project directory:
 
 ```dotenv
-HACK_PAY_HEDERA_NETWORK=testnet
+HACK_PAY_HEDERA_NETWORK=hedera:testnet
 HACK_PAY_RECEIVER_ACCOUNT_ID=0.0.YOUR_ACCOUNT_ID
 HACK_PAY_FACILITATOR_URL=https://api.testnet.blocky402.com
 HACK_PAY_IDEMPOTENCY_BACKEND=memory
@@ -166,7 +166,10 @@ network, amount, receiver account, and expiry.
 ### Decode the header to inspect it
 
 ```bash
-curl -s http://localhost:8000/weather?city=London \
+curl -si http://localhost:8000/weather?city=London \
+  | grep -i 'PAYMENT-REQUIRED:' \
+  | awk '{print $2}' \
+  | tr -d '\r' \
   | python3 -c "import sys,base64,json; h=input(); print(json.dumps(json.loads(base64.b64decode(h)), indent=2))"
 ```
 
