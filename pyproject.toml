@@ -85,6 +85,7 @@ source = ["hack_pay"]
 omit = ["tests/*", "examples/*"]
 
 [tool.importlinter]
+include_external_packages = true
 root_packages = ["hack_pay"]
 
 [[tool.importlinter.contracts]]

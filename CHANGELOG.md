@@ -187,4 +187,4 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   scan), testnet integration (manual trigger), release (PyPI trusted
   publishing).
 
-[0.1.0]: https://github.com/hedera-agent-commerce-kit/hack-pay/releases/tag/v0.1.0
+[0.1.0]: https://github.com/hedera-agent-commerce-kit/hack/releases/tag/v0.1.0

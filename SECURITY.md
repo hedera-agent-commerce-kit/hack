@@ -25,7 +25,7 @@ Payment amounts are derived server-side from `PaymentConfig.amount_tinybars` and
 
 ### Replay Attacks
 
-Every settled payment is stored in an `IdempotencyStore` keyed on a deterministic hash of the payment proof. Replaying the same `PAYMENT-SIGNATURE` any number of times triggers a single settlement call; all subsequent requests return the cached receipt. A per-key `asyncio.Lock` with a double-check pattern prevents the TOCTOU race under concurrent requests carrying the same proof.
+Every settled payment is stored in an `IdempotencyStore` keyed on a deterministic hash of the payment proof plus the endpoint's amount, asset, recipient, network, and scheme requirements. A proof can therefore reuse its receipt only for the same payment terms. Replaying it against those terms triggers a single settlement call; a per-key `asyncio.Lock` with a double-check pattern prevents the TOCTOU race under concurrent requests.
 
 ### SSRF (Server-Side Request Forgery)
 
@@ -53,15 +53,15 @@ HTTP error responses produced by `error_to_response()` never contain Python trac
 
 ### Recipient Integrity
 
-After `settle()` returns, `validate_settlement_recipient()` compares the settled payer against `requirements.pay_to`. A mismatch raises `RecipientMismatchError`, preventing a compromised facilitator from crediting a different account without detection.
+After `settle()` returns, `validate_settlement_recipient()` compares the settled receiver, when supplied by the facilitator, against `requirements.pay_to` before caching the receipt. A mismatch raises `RecipientMismatchError`. Facilitators that omit the settled receiver remain responsible for recipient validation during verify and settle.
 
 ### Payment Expiry Enforcement
 
-`validate_payload_matches_requirements()` checks the `valid_until` timestamp in the decoded payload. Expired proofs raise `ExpiredPaymentError` before any network call is made to the facilitator.
+The current Hedera payment payload contains no local `valid_until` field. Deadline and transaction-validity checks are therefore enforced by the facilitator during `verify()` and `settle()`, and cached receipts expire according to the endpoint deadline plus the configured replay window.
 
 ### Network and Asset Integrity
 
-The same validation step checks that the payload's `network` and `asset` fields match the server's configured values. Mismatches raise `NetworkMismatchError` or `AssetMismatchError` respectively, preventing cross-network or cross-asset payment substitution.
+`validate_payload_matches_requirements()` compares the payload's `network` and `scheme` with the server requirements before any cache lookup. The payload has no top-level asset field; the facilitator validates the transaction's amount, asset, and recipient against the complete `PaymentRequirements`. The idempotency key also binds amount, asset, recipient, network, and scheme, preventing a receipt cached for one set of terms from authorizing another.
 
 ---
 

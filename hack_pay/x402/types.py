@@ -131,4 +131,6 @@ class SettlementResponse(BaseModel):
         description="Machine-readable error reason, e.g. settlement_pending",
     )
 
+    pay_to: str | None = Field(default=None, alias="payTo")
+
     model_config = ConfigDict(frozen=True, populate_by_name=True)

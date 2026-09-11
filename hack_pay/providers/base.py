@@ -32,11 +32,17 @@ class SettleResult:
     ok: bool
     transaction_id: str = ""
     payer: str | None = None
+    receiver: str | None = None
     reason: str = ""
 
     @classmethod
-    def success(cls, transaction_id: str, payer: str | None = None) -> SettleResult:
-        return cls(ok=True, transaction_id=transaction_id, payer=payer)
+    def success(
+        cls,
+        transaction_id: str,
+        payer: str | None = None,
+        receiver: str | None = None,
+    ) -> SettleResult:
+        return cls(ok=True, transaction_id=transaction_id, payer=payer, receiver=receiver)
 
     @classmethod
     def failure(cls, reason: str) -> SettleResult:

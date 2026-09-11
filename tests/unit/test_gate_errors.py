@@ -38,7 +38,23 @@ class TestGateErrors:
         result = await payment_gate.gate(ctx, valid_payment_config)
         assert result.kind == "error"
 
+    async def test_settled_receiver_mismatch_is_not_cached(
+        self, payment_gate, mock_provider, valid_payment_config
+    ):
+        mock_provider.settle = AsyncMock(
+            return_value=SettleResult.success("tx-wrong-recipient", receiver="0.0.99999")
+        )
+        ctx = RequestContext(endpoint="/test", method="GET", payment_signature=_sig(b"tx-wrong"))
+
+        first = await payment_gate.gate(ctx, valid_payment_config)
+        second = await payment_gate.gate(ctx, valid_payment_config)
+
+        assert first.kind == "error"
+        assert second.kind == "error"
+        assert mock_provider.settle.call_count == 2
+
     async def test_malformed_signature_returns_error(self, payment_gate, valid_payment_config):
+        """Malformed signatures remain safely wrapped."""
         ctx = RequestContext(
             endpoint="/test", method="GET", payment_signature="not-valid-base64!!!"
         )
