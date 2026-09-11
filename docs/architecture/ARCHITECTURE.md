@@ -6,7 +6,9 @@ This document describes the internal architecture of the `hack_pay` Python libra
 
 ## 1. Layer Diagram
 
-The library is organised into four layers. Higher layers may import from lower layers; lower layers must never import from higher layers.
+The library is organised into an outer adapter layer, orchestration/provider layers, and
+foundation modules. Arrows below point from an importer to its dependency. Shared types such
+as `core.types` and `x402.types` are foundation code available to both core and providers.
 
 ```mermaid
 graph TD
@@ -23,7 +25,7 @@ graph TD
     C -->|imports| D
 ```
 
-### Dependency rule: `core → x402 → providers → adapters`
+### Dependency rule: outer layers import inward toward foundation modules
 
 | Layer | Allowed imports | Forbidden imports |
 |---|---|---|
@@ -73,7 +75,7 @@ sequenceDiagram
         G->>I: get(key) [double-check after lock]
         I-->>G: None
 
-        note over C,R: Phase 3 — Verify + Settle
+        note over C,R: Phase 4 — Verify + Settle
         G->>P: verify(payload, requirements)
         P-->>G: VerifyResult(ok=True)
         G->>P: settle(payload, requirements)
@@ -82,7 +84,7 @@ sequenceDiagram
         G->>I: put_if_absent(key, receipt, ttl)
         note over G: Release per-key lock
 
-        note over C,R: Phase 4 — Receipt publication
+        note over C,R: Phase 5 — Receipt publication
         alt require_durable_receipt=True
             G->>R: publish(receipt) [blocking]
             R-->>G: ok

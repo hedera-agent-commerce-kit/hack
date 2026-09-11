@@ -55,7 +55,10 @@ from hack_pay.providers.base import PaymentProvider
 from hack_pay.receipts.base import ReceiptPublisher
 from hack_pay.receipts.types import PaymentReceipt
 from hack_pay.x402.codec import decode_payment_signature
-from hack_pay.x402.validation import validate_payload_matches_requirements
+from hack_pay.x402.validation import (
+    validate_payload_matches_requirements,
+    validate_settlement_recipient,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +139,7 @@ class PaymentGate:
         requirements = await self._provider.build_payment_requirements(config)
         validate_payload_matches_requirements(payload, requirements)
 
-        key = derive_idempotency_key(payload)
+        key = derive_idempotency_key(payload, requirements)
 
         # Fast path: already settled (idempotent replay)
         if cached := await self._idempotency.get(key):
@@ -187,6 +190,8 @@ class PaymentGate:
                     duration_ms=settle_ms,
                 )
                 raise FacilitatorError(f"Payment settlement failed: {settle_result.reason}")
+
+            validate_settlement_recipient(settle_result.receiver, requirements.pay_to)
 
             receipt = PaymentReceipt(
                 transaction_id=settle_result.transaction_id,
