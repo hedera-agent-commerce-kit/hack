@@ -204,6 +204,7 @@ should have a one-line summary.
 The codebase enforces a strict dependency hierarchy. Violations are caught by `lint-imports`.
 
 ```
+hack_pay.core  →  hack_pay.x402  →  hack_pay.adapters
 foundation modules  ← imported by —  core/providers  ← imported by —  adapters
 ```
 
