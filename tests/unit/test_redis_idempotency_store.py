@@ -48,9 +48,7 @@ class TestRedisIdempotencyStore:
         store, client = make_store()
         receipt = make_receipt()
         await store.put("key1", receipt, ttl_seconds=7200)
-        client.set.assert_called_once_with(
-            f"{_KEY_PREFIX}key1", _serialize(receipt), ex=7200
-        )
+        client.set.assert_called_once_with(f"{_KEY_PREFIX}key1", _serialize(receipt), ex=7200)
 
     async def test_put_if_absent_stores_when_key_missing(self):
         store, client = make_store()
